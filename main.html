@@ -1,0 +1,227 @@
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>IndianaEagleCreekWatershed</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <!-- Optional theme -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+    <script type="text/javascript" src="uploadExcel.js"></script>
+    <script type="text/javascript" src="./network_files/vis.js"></script>
+    <script type="text/javascript" src="http://code.jquery.com/jquery-1.7.1.min.js"></script>
+    <script type="text/javascript" src="datasources/Individual2_intro1_R3/final/user_subbasins.js"></script>
+    <script type="text/javascript" src="datasources/Individual2_intro1_R3/final/node_position.js"></script>
+
+    <!--for  test.js-->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.7.7/xlsx.core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xls/0.7.4-a/xls.core.min.js"></script>
+
+    <link href="./network_files/vis.css" rel="stylesheet" type="text/css">
+    <style type="text/css">
+      #mydatainfo{
+            position: absolute;
+            margin-top: 5%;
+            width: 599px;
+            height: 275px;
+            border: 2px solid lightgray;
+
+        }
+        #mynetwork{
+            width: 800px;
+            height: 800px;
+            border: 2px solid lightgray;
+            margin-left: 2%;
+        }
+
+        td {
+            vertical-align:top;
+        }
+        table {
+            width:800px;
+        }
+    </style>
+</head>
+
+<body>
+  <div class="row">
+  <h2 style = "margin-left: 2%;">Network Map Visualization</h2>
+    <div class="col-md-4" id="mynetwork"></div>
+    <div class="col-md-4">
+      <form>
+        <div class="form-group">
+          <label for="excelfile">File input</label>
+          <input type="file" id="excelfile">
+        </div>
+        <button  class="btn btn-default" type="button" id="viewfile" value="Export Data" onclick="ExportToJson()" class="btn btn-default">Submit</button>
+      </form>
+
+        <button type="button" class="btn btn-secondary" id="cover_crop" onclick = "funcCropNodes()">Cover Crop</button>
+        <button type="button" class="btn btn-secondary"  id="filter_strip" onclick="funcFilterNodes()"> Filter Strip </button>
+
+      <div class="btn-group" role="group" aria-label="Basic example">
+        <button class="btn btn-secondary" id="ff1" onclick = "funcff1()">Peak flow</button>
+        <button class="btn btn-secondary" id="ff2" onclick = "funcff2()">Cost</button>
+        <button class="btn btn-secondary" id="ff3" onclick = "funcff3()">Sediment</button>
+        <button class="btn btn-secondary" id="ff4" onclick = "funcff4()">Nitrate</button>
+      </div>
+      <br><br>
+        <button type="button"  class="btn btn-success" id="draw_button" onclick="draw()">Draw</button>
+        <button type="button"  class="btn btn-danger" id="destroy_button" onclick="destroyNetwork()">Destroy</button>
+
+      <br><br>
+      <div class="btn-group" role="group" aria-label="Basic example">
+       <input type="button" class="btn btn-secondary" id = "userRegions" onclick="userRegions()" value="User Subbasins">
+       <input type="button" class="btn btn-secondary" id = "urbanRegions" onclick="urbanRegions()" value="Urban Subbasins">
+      </div>
+       <br />
+       <br>
+
+    </div>
+  </div>
+
+<script>
+
+var network = null;
+  //  $('button').on('click', function() {
+  //    $(this).prop('disabled', true);
+  //  });
+
+    function destroyNetwork() {
+      network.destroy();
+      edgesb = null;
+      edgesb = new vis.DataSet();
+      nodesb = new vis.DataSet();
+      document.getElementById("ff1").disabled = false;
+      document.getElementById("ff2").disabled = false;
+      document.getElementById("ff3").disabled = false;
+      document.getElementById("ff4").disabled = false;
+      document.getElementById("cover_crop").disabled = false;
+      document.getElementById("filter_strip").disabled = false;
+      document.getElementById("draw_button").disabled = false;
+      document.getElementById("viewfile").disabled = false;
+      document.getElementById("userRegions").disabled = false;
+      document.getElementById("urbanRegions").disabled = false;
+
+    }
+
+    var fromArray = [1, 2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100,  101,  102,  103,  104,  105,  106,  107,  108,  109,  110,  111,  112,  113,  114,  115,  116,  117,  118,  119,  120,  121,  122,  123,  124,  125,  126,  127,  128,  129,  130];
+    var toArray = [3, 3,  4,  5,  9,  8,  8,  9,  11, 11, 14, 13, 14, 16, 16, 17, 34, 19, 20, 21, 22, 23, 34, 25, 27, 27, 31, 30, 30, 31, 32, 33, 34, 39, 37, 37, 38, 39, 45, 41, 42, 43, 44, 45, 47, 47, 49, 49, 70, 70, 52, 54, 54, 59, 59, 59, 58, 59, 63, 61, 63, 63, 64, 65, 66, 67, 70, 69, 70, 72, 72, 74, 74, 79, 79, 77, 78, 79, 84, 84, 84, 83, 84, 85, 108,  87, 108,  89, 91, 91, 92, 94, 94, 96, 96, 97, 99, 99, 100,  101,  102,  103,  104,  106,  106,  107,  108,  110,  110,  128,  128,  128,  128,  128,  128,  128,  128,  128,  128,  128,  122,  123,  124,  125,  126,  127,  128,  130,  130,  0];
+    // these are the ids of urban subasins from 1----130 basis
+    var urban_subbasins = [49,69,70,72,73,74,75,79,81,84,87,107,108,109,113,114,116,118,120,128,129,130];
+    var container = document.getElementById('mynetwork');
+    var data;
+    var edgesb = new vis.DataSet();
+    var nodesb = new vis.DataSet();
+
+    // create a network
+      var width =800;
+      var height = 800;
+
+    function userRegions(){
+      for (var i = 0; i< indiv_file[0]['userbasins']; i++){
+         nodesb.add({value: Math.max(indiv_file[indiv_file[i+1]['userbasins']-1]['crops'], indiv_file[indiv_file[i+1]['userbasins']-1]['filters']), x: node_position[user_subbasins [i]-1][0], y: node_position[user_subbasins [i]-1][1], color: {background:'rgba(255,200,200,0.1)', border: 'rgba(255,204,0, 1)'}, borderWidth: 1.5});
+      }
+       document.getElementById("userRegions").disabled = true;
+    }
+     function urbanRegions(){
+      for (var i = 0; i< urban_subbasins.length; i++){
+         nodesb.add({value: Math.max(indiv_file[urban_subbasins[i]-1]['crops'], indiv_file[urban_subbasins[i]-1]['filters']), x: node_position[urban_subbasins[i]-1][0], y: node_position[urban_subbasins[i]-1][1], color: {background:'rgba(255,255,255,0.1)', border: 'rgba(102,0,0,1)'}, borderWidth: 1});
+      }
+      document.getElementById("urbanRegions").disabled = true;
+    }
+    // these are the node that edges link to and use
+    function defaultNodes(){
+        for (var i = 0; i< fromArray.length; i++){
+         nodesb.add({id: i+1, label: i+1, value: 1, x: node_position[i][0], y: node_position[i][1], color: {background:'rgba(255,255,255,0)', border: 'rgba(0,0,0,0)'}});
+          }
+
+    }
+
+    function funcCropNodes(){
+        for (var i = 0; i< fromArray.length; i++){
+         nodesb.add({ value: indiv_file[i]['crops'], x: node_position[i][0], y: node_position[i][1], color: 'rgba(147, 188, 237,1)'});
+          }
+          document.getElementById("cover_crop").disabled = true;
+    }
+    function funcFilterNodes(){
+        for (var i = 0; i< fromArray.length; i++){
+         nodesb.add({value: indiv_file[i]['filters'], x: node_position[i][0], y: node_position[i][1],  color: 'rgba(73, 161, 30,0.4)'});
+      }
+      document.getElementById("filter_strip").disabled = true;
+    }
+
+    // objective space
+    function funcff1(){
+         for (var i = 0; i< fromArray.length; i++){
+         edgesb.add({id:i+1 ,from: fromArray[i], to: toArray[i], value: indiv_file[i]['ff1'] , smooth: {type: "curvedCCW", roundness: 0.55}, color:'blue'});
+         }
+         document.getElementById("ff1").disabled = true;
+      }
+
+    function funcff2(){
+      for (var i = 0; i< fromArray.length; i++){
+         edgesb.add({id:i+131,from: fromArray[i], to: toArray[i], value: indiv_file[i]['ff2'] , smooth: {type: "curvedCW", roundness: 0.55}, color:'red'});
+      }
+       document.getElementById("ff2").disabled = true;
+    }
+
+     function funcff3(){
+      for (var i = 0; i< fromArray.length; i++){
+         edgesb.add({id: i+261, from: fromArray[i], to: toArray[i], value: indiv_file[i]['ff3'] , smooth: {type: "curvedCCW", roundness: 0.25}, color:'black'});
+      }
+       document.getElementById("ff3").disabled = true;
+    }
+
+    function funcff4(){
+      for (var i = 0; i< fromArray.length; i++){
+         edgesb.add({id: i+391, from: fromArray[i], to: toArray[i], value: indiv_file[i]['ff4'] , smooth: {type: "curvedCW", roundness: 0.25}, color:'rgb(230,138, 0)'});
+      }
+       document.getElementById("ff4").disabled = true;
+    }
+
+    var options = {
+      width: width + 'px',
+      height: height + 'px',
+      nodes: {
+          shape: 'dot'
+     },
+      edges: {
+        smooth: false
+      },
+      physics: false,
+      interaction: {
+          dragNodes: false,// do not allow dragging nodes
+          zoomView: true, // do not allow zooming
+          dragView: true, // do not allow dragging
+          //selectable: true,
+          //selectConnectedEdges: true
+      }
+    };
+
+    function draw(){
+      // create a network of nodes
+      defaultNodes();
+      data = {
+        nodes: nodesb,
+        edges: edgesb
+      };
+
+      document.getElementById("destroy_button").disabled = false;
+      console.log(data.nodes);
+      network = new vis.Network(container, data, options);
+      network.moveTo({
+          position: {x: -650, y: -120},
+          offset: {x: -width/2, y: -height/2},
+          scale: 0.25,
+      })
+  }
+
+</script>
+
+</body>
+</html>
